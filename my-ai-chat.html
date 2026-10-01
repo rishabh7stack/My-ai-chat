@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10253c" />
+    <title>my-ai-chat — your everyday AI</title>
+    <style>
+      :root {
+        --ink: #182335;
+        --muted: #687386;
+        --line: #e6e9ee;
+        --shell: #10253c;
+        --shell-2: #173650;
+        --paper: #fbfbfc;
+        --canvas: #f3f5f8;
+        --card: #ffffff;
+        --accent: #ff7d5a;
+        --accent-deep: #e95f3b;
+        --accent-wash: #fff0eb;
+        --user: #e8f0ff;
+        --shadow: 0 20px 55px rgba(22, 35, 53, 0.12);
+        --soft-shadow: 0 8px 25px rgba(22, 35, 53, 0.08);
+      }
+
+      body.dark {
+        --ink: #edf3f8;
+        --muted: #aeb9c7;
+        --line: #2a3d52;
+        --shell: #0d1a2a;
+        --shell-2: #10283e;
+        --paper: #142334;
+        --canvas: #101d2c;
+        --card: #182a3d;
+        --accent-wash: #3d2926;
+        --user: #243d5c;
+        --shadow: 0 20px 55px rgba(0, 0, 0, 0.3);
+        --soft-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      button, input, textarea { font: inherit; }
+      button { cursor: pointer; }
+      button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid rgba(255,125,90,.45); outline-offset: 2px; }
+
+      .app { min-height: 100%; display: flex; }
+      .sidebar {
+        width: 276px;
+        flex: 0 0 276px;
+        min-height: 100vh;
+        background: var(--shell);
+        color: #eff7ff;
+        padding: 24px 16px 18px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 5;
+      }
+      .brand { display: flex; gap: 11px; align-items: center; padding: 0 8px 25px; }
+      .brand-mark {
+        width: 35px; height: 35px; border-radius: 12px;
+        display: grid; place-items: center; color: #10253c;
+        background: linear-gradient(135deg, #ffd1bf, var(--accent));
+        font-weight: 900; font-size: 19px; box-shadow: 0 8px 16px rgba(255,125,90,.18);
+      }
+      .brand-text { line-height: 1.05; }
+      .brand-text strong { display: block; letter-spacing: -.03em; font-size: 18px; }
+      .brand-text span { color: #aab9c8; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+      .new-chat {
+        width: 100%; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: white;
+        border-radius: 13px; padding: 12px 13px; display: flex; justify-content: space-between; align-items: center;
+        transition: background .2s ease, transform .2s ease;
+      }
+      .new-chat:hover { background: rgba(255,255,255,.14); transform: translateY(-1px); }
+      .new-chat span:first-child { display: flex; gap: 9px; align-items: center; font-size: 14px; font-weight: 650; }
+      .shortcut { font-size: 11px; color: #b3c1d0; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; padding: 2px 5px; }
+      .side-search { margin: 17px 0 10px; position: relative; }
+      .side-search svg { position: absolute; top: 11px; left: 12px; width: 15px; color: #aab9c8; }
+      .side-search input { width: 100%; border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.12); color: white; border-radius: 10px; padding: 10px 11px 10px 36px; font-size: 12px; }
+      .side-search input::placeholder { color: #aab9c8; }
+      .nav-label { padding: 11px 9px 7px; color: #91a4b8; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      .history { overflow: auto; flex: 1; min-height: 80px; padding: 0 1px; scrollbar-width: thin; }
+      .conversation {
+        width: 100%; color: #dbe6f0; background: transparent; border: 0; border-radius: 10px; text-align: left;
+        padding: 10px 9px; margin: 1px 0; display: flex; align-items: center; gap: 10px;
+        transition: background .15s ease;
+      }
+      .conversation:hover, .conversation.active { background: rgba(255,255,255,.1); color: white; }
+      .conversation svg { width: 16px; flex: 0 0 auto; color: #a5b7c9; }
+      .conversation-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
+      .sidebar-bottom { border-top: 1px solid rgba(255,255,255,.11); margin-top: 12px; padding-top: 12px; }
+      .profile { width: 100%; display: flex; gap: 9px; align-items: center; border: 0; color: white; background: transparent; padding: 7px 8px; border-radius: 10px; text-align: left; }
+      .profile:hover { background: rgba(255,255,255,.08); }
+      .avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: #f4c8a8; color: #543725; font-size: 12px; font-weight: 800; }
+      .profile-name { display: block; font-size: 13px; font-weight: 700; }
+      .profile-plan { display: block; color: #9eb0c2; font-size: 11px; margin-top: 2px; }
+      .profile-more { margin-left: auto; color: #aab9c8; font-size: 18px; }
+
+      .main { flex: 1; min-width: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--paper); }
+      .topbar {
+        height: 76px; flex: 0 0 76px; border-bottom: 1px solid var(--line); padding: 0 34px;
+        display: flex; align-items: center; justify-content: space-between; background: color-mix(in srgb, var(--paper) 94%, transparent);
+      }
+      .topbar-left { display: flex; gap: 13px; align-items: center; }
+      .menu-toggle { display: none; }
+      .title-group h1 { font-size: 15px; margin: 0; letter-spacing: -.015em; font-weight: 760; }
+      .title-group p { color: var(--muted); margin: 4px 0 0; font-size: 12px; }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #39bd87; margin-right: 5px; box-shadow: 0 0 0 4px rgba(57,189,135,.12); }
+      .topbar-actions { display: flex; align-items: center; gap: 7px; }
+      .icon-button { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 10px; transition: .18s ease; }
+      .icon-button:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 20%, var(--line)); transform: translateY(-1px); }
+      .icon-button svg { width: 17px; }
+      .upgrade { border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 750; padding: 10px 13px; margin-left: 5px; box-shadow: 0 8px 16px rgba(255,125,90,.2); }
+      .upgrade:hover { background: var(--accent-deep); }
+
+      .chat-scroll { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+      .chat-frame { width: min(820px, calc(100% - 48px)); margin: 0 auto; padding: 47px 0 28px; }
+      .welcome { text-align: center; padding: 15px 0 34px; animation: appear .45s ease both; }
+      .welcome-orb { width: 61px; height: 61px; margin: 0 auto 18px; border-radius: 21px; display: grid; place-items: center; color: #10253c; font-size: 29px; font-weight: 900; background: conic-gradient(from 220deg, #ff9d80, #ffd7c6, #80d1c4, #ff9d80); box-shadow: 0 14px 30px rgba(76,124,140,.22); }
+      .welcome h2 { font-size: clamp(28px, 4vw, 39px); line-height: 1.08; letter-spacing: -.05em; margin: 0; }
+      .welcome h2 em { color: var(--accent); font-style: normal; }
+      .welcome p { margin: 13px auto 0; max-width: 445px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+      .suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; text-align: left; margin-top: 28px; }
+      .suggestion { min-height: 99px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 15px; color: var(--ink); text-align: left; transition: .2s ease; box-shadow: 0 2px 0 rgba(22,35,53,.01); }
+      .suggestion:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: var(--soft-shadow); }
+      .suggestion-icon { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent-deep); margin-bottom: 11px; }
+      .suggestion-icon svg { width: 15px; }
+      .suggestion strong { display: block; font-size: 13px; margin-bottom: 5px; }
+      .suggestion span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+      .message-list { display: flex; flex-direction: column; gap: 20px; }
+      .message-row { display: flex; gap: 13px; align-items: flex-start; animation: message-in .3s ease both; }
+      .message-row.user-row { flex-direction: row-reverse; }
+      .message-avatar { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 10px; display: grid; place-items: center; background: var(--shell); color: #fff; font-size: 14px; font-weight: 850; }
+      .user-row .message-avatar { background: #f4c8a8; color: #583a29; border-radius: 50%; font-size: 11px; }
+      .message-body { max-width: min(650px, calc(100% - 45px)); }
+      .user-row .message-body { display: flex; flex-direction: column; align-items: flex-end; }
+      .message-meta { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; margin: 1px 0 7px; }
+      .bubble { background: var(--card); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: 13px 15px; font-size: 14px; line-height: 1.6; box-shadow: 0 2px 0 rgba(22,35,53,.01); white-space: pre-wrap; }
+      .user-row .bubble { background: var(--user); border-color: transparent; border-radius: 16px 4px 16px 16px; }
+      .bubble p { margin: 0 0 10px; }
+      .bubble p:last-child { margin: 0; }
+      .bubble ul { margin: 8px 0 0; padding-left: 20px; }
+      .bubble li + li { margin-top: 3px; }
+      .message-tools { display: flex; gap: 6px; margin-top: 8px; }
+      .message-tools button { border: 0; color: var(--muted); background: transparent; padding: 3px 4px; font-size: 11px; display: flex; gap: 4px; align-items: center; }
+      .message-tools button:hover { color: var(--ink); }
+      .message-tools svg { width: 13px; }
+      .sources { margin-top: 10px; }
+      .sources-label { display: block; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; margin: 0 0 6px; }
+      .source-links { display: flex; flex-wrap: wrap; gap: 6px; }
+      .source-link { color: var(--ink); text-decoration: none; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 5px 8px; font-size: 11px; max-width: 190px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .source-link:hover { border-color: var(--accent); color: var(--accent-deep); }
+      .typing-bubble { min-width: 76px; padding: 15px; }
+      .typing-dots { display: flex; gap: 4px; }
+      .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite ease-in-out; }
+      .typing-dots span:nth-child(2) { animation-delay: .15s; } .typing-dots span:nth-child(3) { animation-delay: .3s; }
+
+      .composer-area { flex: 0 0 auto; padding: 8px 24px 24px; background: linear-gradient(180deg, transparent, var(--paper) 25%); }
+      .composer-wrap { width: min(820px, 100%); margin: 0 auto; }
+      .composer { border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); border-radius: 18px; padding: 9px 10px 10px 14px; transition: border .2s ease, box-shadow .2s ease; }
+      .composer:focus-within { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); box-shadow: 0 13px 35px rgba(22,35,53,.14); }
+      #prompt { display: block; resize: none; outline: 0; border: 0; background: transparent; color: var(--ink); width: 100%; min-height: 50px; max-height: 170px; padding: 6px 3px 5px; line-height: 1.45; font-size: 14px; }
+      #prompt::placeholder { color: var(--muted); }
+      .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .composer-options { display: flex; align-items: center; gap: 4px; }
+      .composer-options .icon-button { width: 31px; height: 31px; border-color: transparent; background: transparent; }
+      .model-button { border: 0; background: transparent; color: var(--muted); padding: 6px 7px; border-radius: 7px; display: flex; gap: 5px; align-items: center; font-size: 12px; font-weight: 650; }
+      .model-button:hover { background: var(--canvas); color: var(--ink); }
+      .model-button svg { width: 13px; }
+      .send { width: 36px; height: 36px; border: 0; border-radius: 11px; display: grid; place-items: center; background: var(--accent); color: white; transition: .2s ease; }
+      .send:hover:not(:disabled) { background: var(--accent-deep); transform: translateY(-1px); }
+      .send:disabled { background: color-mix(in srgb, var(--muted) 36%, transparent); cursor: not-allowed; }
+      .send svg { width: 17px; }
+      .disclaimer { text-align: center; color: var(--muted); font-size: 10px; margin: 11px 0 0; }
+      .disclaimer strong { font-weight: 700; color: inherit; }
+      .mobile-scrim { display: none; }
+      .toast { position: fixed; bottom: 22px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--paper); padding: 10px 14px; border-radius: 10px; font-size: 12px; transition: .25s ease; z-index: 20; }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+      .empty-history { color: #a6b5c5; font-size: 12px; padding: 10px 9px; }
+      .hidden { display: none !important; }
+
+      @keyframes appear { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes message-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+      @media (max-width: 760px) {
+        .sidebar { position: fixed; left: 0; top: 0; width: 282px; transform: translateX(-105%); transition: transform .25s ease; box-shadow: var(--shadow); }
+        .sidebar.open { transform: translateX(0); }
+        .mobile-scrim { position: fixed; inset: 0; z-index: 4; background: rgba(9,23,38,.45); backdrop-filter: blur(2px); }
+        .mobile-scrim.show { display: block; }
+        .menu-toggle { display: grid; }
+        .topbar { height: 64px; flex-basis: 64px; padding: 0 16px; }
+        .title-group p { display: none; }
+        .upgrade { display: none; }
+        .topbar-actions { gap: 4px; }
+        .topbar-actions .icon-button { width: 34px; height: 34px; }
+        .chat-frame { width: min(100% - 28px, 620px); padding-top: 32px; }
+        .welcome { padding-top: 4px; }
+        .suggestions { grid-template-columns: 1fr; margin-top: 24px; }
+        .suggestion { min-height: 82px; display: grid; grid-template-columns: 28px 1fr; column-gap: 11px; align-items: center; padding: 12px 14px; }
+        .suggestion-icon { margin: 0; grid-row: 1 / span 2; }
+        .suggestion strong { margin: 0 0 2px; }
+        .composer-area { padding: 6px 14px 16px; }
+        .message-list { gap: 16px; }
+      }
+      @media (max-width: 420px) {
+        .topbar { padding: 0 11px; }
+        .title-group h1 { font-size: 14px; }
+        .topbar-actions .icon-button:last-of-type { display: none; }
+        .chat-frame { width: min(100% - 20px, 620px); padding-top: 25px; }
+        .welcome h2 { font-size: 30px; }
+        .welcome p { font-size: 14px; }
+        .message-row { gap: 8px; }
+        .message-avatar { width: 28px; height: 28px; flex-basis: 28px; border-radius: 9px; }
+        .message-body { max-width: calc(100% - 36px); }
+        .bubble { padding: 11px 12px; font-size: 13px; }
+        .model-button { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar" aria-label="Conversation history">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div class="brand-text"><strong>my-ai-chat</strong><span>Everyday AI</span></div>
+        </div>
+        <button class="new-chat" id="newChat" type="button">
+          <span><span aria-hidden="true">＋</span> Start a new chat</span><span class="shortcut">⌘ K</span>
+        </button>
+        <label class="side-search"><span class="sr-only">Search chats</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="historySearch" type="search" placeholder="Search chats" autocomplete="off" />
+        </label>
+        <div class="nav-label">Recent</div>
+        <nav class="history" id="history" aria-label="Recent conversations"></nav>
+        <div class="sidebar-bottom">
+          <button class="profile" type="button" id="profileButton"><span class="avatar">RD</span><span><span class="profile-name">Rishabh</span><span class="profile-plan">Free plan</span></span><span class="profile-more" aria-hidden="true">•••</span></button>
+        </div>
+      </aside>
+      <div class="mobile-scrim" id="scrim"></div>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="icon-button menu-toggle" id="menuToggle" type="button" aria-label="Open chat history">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div class="title-group"><h1>New conversation</h1><p id="researchStatus"><span class="status-dot"></span>Checking research connection…</p></div>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+              <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9c0-.4 0-.8-.1-1.2A7 7 0 0 1 12 3Z"/></svg>
+            </button>
+            <button class="icon-button" id="clearButton" type="button" aria-label="Clear current chat" title="Clear chat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></svg>
+            </button>
+            <button class="upgrade" type="button" id="upgradeButton">Upgrade</button>
+          </div>
+        </header>
+
+        <section class="chat-scroll" id="chatScroll" aria-label="Chat messages">
+          <div class="chat-frame">
+            <div class="welcome" id="welcome">
+              <div class="welcome-orb" aria-hidden="true">✦</div>
+              <h2>What can we <em>make</em> today?</h2>
+              <p>From a first thought to a finished plan, my-ai-chat helps you move clearly and quickly.</p>
+              <div class="suggestions" id="suggestions">
+                <button class="suggestion" type="button" data-prompt="Help me map out a focused week with realistic goals.">
+                  <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span><span><strong>Plan my week</strong><span>Turn priorities into a calm plan</span></span>
+                </button>
+                <button class="suggestion" type="button" data-prompt="Give me three creative ideas for a personal portfolio project.">
+                  <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.8 5.2L5 10l5.2 1.8L12 17l1.8-5.2L19 10l-5.2-1.8L12 3Z"/></svg></span><span><strong>Brainstorm ideas</strong><span>Find a fresh starting point</span></span>
+                </button>
+                <button class="suggestion" type="button" data-prompt="Explain a difficult topic in a simple, visual way.">
+                  <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6 2h14v20H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/></svg></span><span><strong>Learn something</strong><span>Make a complex subject click</span></span>
+                </button>
+                <button class="suggestion" type="button" data-prompt="Write a friendly, confident message that gets a reply.">
+                  <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></span><span><strong>Write with me</strong><span>Find the right words together</span></span>
+                </button>
+              </div>
+            </div>
+            <div class="message-list" id="messages" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <footer class="composer-area">
+          <div class="composer-wrap">
+            <div class="composer">
+              <textarea id="prompt" rows="1" placeholder="Ask my-ai-chat anything..." aria-label="Message my-ai-chat"></textarea>
+              <div class="composer-footer">
+                <div class="composer-options">
+                  <button class="icon-button" id="researchButton" type="button" aria-label="Google Search research is on" title="Google Search research is on">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+                  </button>
+                  <button class="model-button" id="modelButton" type="button">my-ai-chat Lite <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                </div>
+                <button class="send" id="sendButton" type="button" aria-label="Send message" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="m5 12 14-7-4 14-3-6-7-1Z"/></svg>
+                </button>
+              </div>
+            </div>
+            <p class="disclaimer">Research answers cite the web sources they use. Verify important information.</p>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const $ = (selector) => document.querySelector(selector);
+      const prompt = $('#prompt');
+      const sendButton = $('#sendButton');
+      const messages = $('#messages');
+      const welcome = $('#welcome');
+      const chatScroll = $('#chatScroll');
+      const history = $('#history');
+      const title = $('.title-group h1');
+      const savedKey = 'my-ai-chat-chats-v1';
+      const themeKey = 'my-ai-chat-theme-v1';
+      let currentMessages = [];
+      let savedChats = [];
+      let isThinking = false;
+      let researchConnected = false;
+
+      const icons = {
+        chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.6 9.6 0 0 1-4-.9L3 21l1.4-4A8.4 8.4 0 0 1 3 12.5a8.4 8.4 0 0 1 9-8.5 8.4 8.4 0 0 1 9 7.5Z"/></svg>',
+        copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+        refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>'
+      };
+
+      function escapeHTML(value) {
+        return value.replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+      }
+
+      function formatAnswer(answer) {
+        return escapeHTML(answer)
+          .replace(/\n\n/g, '</p><p>')
+          .replace(/\n• /g, '</p><ul><li>')
+          .replace(/\n- /g, '</p><ul><li>')
+          .replace(/\n(?=\d+\. )/g, '</p><p>')
+          .replace(/\n/g, '<br>')
+          .replace(/<\/li><\/p>/g, '</li></ul><p>')
+          .replace(/^(.*)$/s, '<p>$1</p>')
+          .replace(/<p><\/p>/g, '');
+      }
+
+      function timeNow() {
+        return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date());
+      }
+
+      function getAnswer(input) {
+        const topic = input.replace(/[?!.]+$/g, '').trim();
+        const normalized = topic.toLowerCase();
+        if (/week|plan|schedule|goal/.test(normalized)) {
+          return `Here’s a simple way to make this feel achievable:\n\n1. Pick three outcomes that would make the week feel successful.\n2. Give each outcome one protected focus block before filling your calendar.\n3. Keep one small buffer each day for loose ends.\n\nFor “${topic}”, I’d start with the first 45-minute block tomorrow morning. What is the single result you’d most like to have by Friday?`;
+        }
+        if (/idea|brainstorm|project|portfolio/.test(normalized)) {
+          return `A strong direction usually sits at the intersection of useful, personal, and easy to show. Here are three sparks for “${topic}”:\n\n• A tiny tool that turns a frustrating routine into one clear action.\n• A visual story that explains a niche topic you care about.\n• A before-and-after redesign of an experience people use every day.\n\nPick the one you could make a rough version of this weekend—that’s often the best signal.`;
+        }
+        if (/write|message|email|reply/.test(normalized)) {
+          return `Try this warm, direct structure:\n\n“Hi [name],\n\nI’m reaching out because [specific reason]. I’d love to [clear next step]. Would [simple option] work for you?\n\nThanks,\n[you]”\n\nThe secret is to make the next step effortless. If you tell me the recipient and context, I can make it sound exactly like you.`;
+        }
+        if (/explain|learn|what is|how does/.test(normalized)) {
+          return `Let’s make it intuitive. Think of “${topic}” as a system with three layers:\n\n• The purpose: the problem it solves.\n• The mechanism: what happens behind the scenes.\n• The trade-off: what it makes easier and what it costs.\n\nTell me your current level—beginner, familiar, or deep dive—and I’ll tailor a crisp explanation.`;
+        }
+        return `That’s a great place to start. For “${topic}”, I’d avoid trying to solve everything at once.\n\nFirst, name the outcome you want. Then list the two or three constraints that matter most. Finally, choose one small next move you can do in under 20 minutes.\n\nIf you share a little more context, I can turn this into a specific plan, draft, or set of options.`;
+      }
+
+      async function getResearchAnswer(input) {
+        const response = await fetch('/api/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: input })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Research service could not answer right now.');
+        return data;
+      }
+
+      async function checkResearchConnection() {
+        const status = $('#researchStatus');
+        try {
+          const response = await fetch('/health', { cache: 'no-store' });
+          const data = await response.json();
+          if (!data.ready) throw new Error('not configured');
+          researchConnected = true;
+          status.innerHTML = '<span class="status-dot"></span>Google Search research is on';
+          $('#researchButton').setAttribute('aria-label', 'Google Search research is on');
+          $('#researchButton').title = 'Google Search research is on';
+        } catch {
+          status.innerHTML = '<span class="status-dot"></span>Demo mode — start My AI Chat Research for web answers';
+          $('#researchButton').setAttribute('aria-label', 'Start My AI Chat Research to search Google');
+          $('#researchButton').title = 'Start My AI Chat.command to search Google';
+        }
+      }
+
+      function renderSources(citations = []) {
+        if (!citations.length) return '';
+        const unique = Array.from(new Map(citations.filter((source) => source?.url).map((source) => [source.url, source])).values()).slice(0, 5);
+        if (!unique.length) return '';
+        return `<div class="sources"><span class="sources-label">Web sources</span><div class="source-links">${unique.map((source, index) => `<a class="source-link" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHTML(source.title || source.url)}">${escapeHTML(source.title || `Source ${index + 1}`)}</a>`).join('')}</div></div>`;
+      }
+
+      function renderMessage(role, content, options = {}) {
+        const row = document.createElement('article');
+        row.className = `message-row ${role === 'user' ? 'user-row' : ''}`;
+        const isUser = role === 'user';
+        row.innerHTML = `
+          <div class="message-avatar" aria-hidden="true">${isUser ? 'RD' : '✦'}</div>
+          <div class="message-body">
+            <div class="message-meta"><strong>${isUser ? 'You' : 'my-ai-chat'}</strong><span>${options.time || timeNow()}</span></div>
+            <div class="bubble">${isUser ? escapeHTML(content) : formatAnswer(content)}</div>
+            ${!isUser ? renderSources(options.citations) : ''}
+            ${!isUser && !options.typing ? `<div class="message-tools"><button type="button" data-copy="${escapeHTML(content)}">${icons.copy} Copy</button><button type="button" data-regenerate>${icons.refresh} Try again</button></div>` : ''}
+          </div>`;
+        messages.append(row);
+        return row;
+      }
+
+      function addTyping() {
+        const row = document.createElement('article');
+        row.className = 'message-row';
+        row.id = 'typing';
+        row.innerHTML = `<div class="message-avatar" aria-hidden="true">✦</div><div class="message-body"><div class="message-meta"><strong>my-ai-chat</strong><span>thinking</span></div><div class="bubble typing-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+        messages.append(row);
+        scrollToBottom();
+      }
+
+      function scrollToBottom() { requestAnimationFrame(() => { chatScroll.scrollTop = chatScroll.scrollHeight; }); }
+      function setComposerState() { sendButton.disabled = !prompt.value.trim() || isThinking; }
+      function autoResize() { prompt.style.height = 'auto'; prompt.style.height = `${Math.min(prompt.scrollHeight, 170)}px`; }
+
+      function saveChats() {
+        if (!currentMessages.length) return;
+        const firstUser = currentMessages.find((message) => message.role === 'user');
+        if (!firstUser) return;
+        const chat = { id: Date.now(), title: firstUser.content.slice(0, 36), messages: currentMessages, updated: Date.now() };
+        savedChats = [chat, ...savedChats.filter((item) => item.title !== chat.title)].slice(0, 10);
+        localStorage.setItem(savedKey, JSON.stringify(savedChats));
+        renderHistory();
+      }
+
+      function renderHistory(query = '') {
+        const lower = query.toLowerCase().trim();
+        const display = savedChats.filter((chat) => chat.title.toLowerCase().includes(lower));
+        if (!display.length) {
+          history.innerHTML = `<p class="empty-history">${lower ? 'No matching chats' : 'Your completed chats will appear here.'}</p>`;
+          return;
+        }
+        history.innerHTML = display.map((chat, index) => `<button class="conversation ${index === 0 ? 'active' : ''}" type="button" data-chat-id="${chat.id}">${icons.chat}<span class="conversation-text">${escapeHTML(chat.title)}</span></button>`).join('');
+      }
+
+      function newChat() {
+        currentMessages = [];
+        messages.innerHTML = '';
+        welcome.classList.remove('hidden');
+        title.textContent = 'New conversation';
+        prompt.value = '';
+        autoResize(); setComposerState();
+        closeSidebar();
+        prompt.focus();
+      }
+
+      async function sendMessage(value = prompt.value.trim()) {
+        if (!value || isThinking) return;
+        welcome.classList.add('hidden');
+        renderMessage('user', value);
+        currentMessages.push({ role: 'user', content: value, time: timeNow() });
+        title.textContent = value.length > 34 ? `${value.slice(0, 34)}…` : value;
+        prompt.value = ''; autoResize();
+        isThinking = true; setComposerState(); addTyping();
+        const fallbackDelay = 720 + Math.min(value.length * 8, 850);
+        try {
+          const result = researchConnected ? await getResearchAnswer(value) : await new Promise((resolve) => setTimeout(() => resolve({ answer: getAnswer(value), citations: [] }), fallbackDelay));
+          $('#typing')?.remove();
+          renderMessage('assistant', result.answer, { citations: result.citations || [] });
+          currentMessages.push({ role: 'assistant', content: result.answer, citations: result.citations || [], time: timeNow() });
+          isThinking = false; setComposerState(); saveChats(); scrollToBottom();
+        } catch (error) {
+          $('#typing')?.remove();
+          const message = error.message || 'Unable to reach the research service.';
+          renderMessage('assistant', `I couldn’t complete the Google Search research just now. ${message}`);
+          currentMessages.push({ role: 'assistant', content: `I couldn’t complete the Google Search research just now. ${message}`, time: timeNow() });
+          isThinking = false; setComposerState(); scrollToBottom();
+        }
+        scrollToBottom();
+      }
+
+      function loadChat(id) {
+        const chat = savedChats.find((item) => String(item.id) === String(id));
+        if (!chat || isThinking) return;
+        currentMessages = chat.messages;
+        messages.innerHTML = '';
+        welcome.classList.add('hidden');
+        title.textContent = chat.title;
+        currentMessages.forEach((message) => renderMessage(message.role, message.content, { time: message.time, citations: message.citations }));
+        renderHistory(); closeSidebar(); scrollToBottom();
+      }
+
+      function showToast(message) {
+        const toast = $('#toast'); toast.textContent = message; toast.classList.add('show');
+        clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      function closeSidebar() { $('#sidebar').classList.remove('open'); $('#scrim').classList.remove('show'); }
+      function toggleSidebar() { $('#sidebar').classList.toggle('open'); $('#scrim').classList.toggle('show'); }
+
+      try { savedChats = JSON.parse(localStorage.getItem(savedKey)) || []; } catch { savedChats = []; }
+      if (localStorage.getItem(themeKey) === 'dark') document.body.classList.add('dark');
+      renderHistory();
+
+      prompt.addEventListener('input', () => { autoResize(); setComposerState(); });
+      prompt.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
+      sendButton.addEventListener('click', () => sendMessage());
+      $('#newChat').addEventListener('click', newChat);
+      $('#menuToggle').addEventListener('click', toggleSidebar);
+      $('#scrim').addEventListener('click', closeSidebar);
+      $('#historySearch').addEventListener('input', (event) => renderHistory(event.target.value));
+      $('#themeToggle').addEventListener('click', () => { document.body.classList.toggle('dark'); localStorage.setItem(themeKey, document.body.classList.contains('dark') ? 'dark' : 'light'); });
+      $('#clearButton').addEventListener('click', () => { if (!currentMessages.length || confirm('Clear this chat?')) newChat(); });
+      $('#researchButton').addEventListener('click', () => showToast(researchConnected ? 'Google Search research is on for every question.' : 'Open My AI Chat.command, then enter a Gemini API key.'));
+      $('#modelButton').addEventListener('click', () => showToast('my-ai-chat Lite is selected for fast everyday help.'));
+      $('#upgradeButton').addEventListener('click', () => showToast('Upgrade flow can be connected to your billing provider.'));
+      $('#profileButton').addEventListener('click', () => showToast('Profile settings are ready to connect.'));
+      $('#suggestions').addEventListener('click', (event) => { const button = event.target.closest('[data-prompt]'); if (button) sendMessage(button.dataset.prompt); });
+      history.addEventListener('click', (event) => { const button = event.target.closest('[data-chat-id]'); if (button) loadChat(button.dataset.chatId); });
+      messages.addEventListener('click', async (event) => {
+        const copy = event.target.closest('[data-copy]');
+        if (copy) { try { await navigator.clipboard.writeText(copy.dataset.copy); showToast('Response copied'); } catch { showToast('Select the response to copy it'); } }
+        const retry = event.target.closest('[data-regenerate]');
+        if (retry && !isThinking) { const latest = [...currentMessages].reverse().find((message) => message.role === 'user'); if (latest) sendMessage(latest.content); }
+      });
+      window.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); newChat(); } });
+      checkResearchConnection();
+    </script>
+  </body>
+</html>

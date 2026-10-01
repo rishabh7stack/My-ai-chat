@@ -1,0 +1,10 @@
+MY AI CHAT RESEARCH — QUICK START
+
+1. Get a Gemini API key from Google AI Studio.
+2. In Finder, double-click "My AI Chat.command".
+3. Paste your Gemini API key in the Terminal window and press Return.
+4. My AI Chat opens in your browser at http://127.0.0.1:4173.
+
+Keep the Terminal window open while using My AI Chat. Press Control+C there to stop it.
+
+Your Gemini API key is only held in that Terminal session. It is not saved in My AI Chat's HTML file or browser storage.
